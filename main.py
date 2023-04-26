@@ -9,6 +9,7 @@ if __name__ == '__main__':
 
     src_path = 'examples/files'
     eoepca_stac_gen.create(src_path,
+                           catalog_name='Files Folder Catalog',
                            collection_paths=[],
                            item_paths=[],
                            ignore_paths=ignore_paths)

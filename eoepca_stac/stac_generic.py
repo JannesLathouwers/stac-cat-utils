@@ -33,8 +33,8 @@ def create_file_item(href):
         file_media_type = media_types[extension.lower()]
     else:
         file_media_type = mimetypes.guess_type(href)
-    file_name = os.path.basename(href)
-    file_asset = pystac.Asset(href=href, title=file_name,
+    file_asset = pystac.Asset(href=href,
+                              title=href,
                               media_type=file_media_type,
                               extra_fields={'Creation': file_dt_creation.strftime('%Y-%m-%d %H:%M')},
                               roles=['data'])
