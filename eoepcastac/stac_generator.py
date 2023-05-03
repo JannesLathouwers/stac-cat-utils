@@ -2,22 +2,26 @@ import datetime
 import logging
 import os
 import sys
-
-import pystac
 import warnings
 
-from eoepca_stac import stac_generic
-from eoepca_stac.utils import is_product_folder, is_collection_empty, generate_path_list, collection_to_assets
+import pystac
+
+from eoepcastac.stac import EOEPCACatalog, EOEPCACollection, EOEPCAItem, create_generic_asset
+from eoepcastac.utils import is_product_folder, is_collection_empty, generate_path_list
 from rasterio.errors import RasterioIOError, RasterioError
-from eoepca_stac.slc import stac as stac_sentinel1_slc
+from eoepcastac.slc import stac as stac_sentinel1_slc
 from stactools.sentinel1.grd import stac as stac_sentinel1_grd
 from stactools.sentinel2 import stac as stac_sentinel2
 from stactools.landsat import stac as stac_landsat
 from typing import Optional
+from rio_stac import create_stac_item
+
+default_extent = pystac.Extent(spatial=pystac.SpatialExtent([-180, -90, 180, 90]),
+                               temporal=pystac.TemporalExtent([[None, None]]))
 
 warnings.filterwarnings('ignore')
 
-logger = logging.getLogger("EoepcaStacGenerator")
+logger = logging.getLogger('EoepcaStacGenerator')
 logger.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -27,79 +31,54 @@ handler.setLevel(logging.DEBUG)
 
 logger.addHandler(handler)
 
-default_extent = pystac.Extent(spatial=pystac.SpatialExtent([-180, -90, 180, 90]),
-                               temporal=pystac.TemporalExtent([[None, None]]))
-
 
 class EoepcaStacGenerator:
     def __init__(self):
-        self.__stac_catalog: Optional[pystac.Catalog] = None
+        self.__stac_catalog: Optional[EOEPCACatalog] = None
         self.__src_path = None
         self.__asset_href_prefix = '/'
         self.__catalog_name = 'stac_catalog'
-        self.__generic_collection = pystac.Collection(id='Files',
-                                                      description='Collection of generic files',
-                                                      extent=default_extent)
+        self.__generic_collection = EOEPCACollection(id='files',
+                                                     description='Collection of generic files',
+                                                     extent=default_extent)
 
     @staticmethod
-    def __add_to_container(container, element):
-        if isinstance(container, pystac.Collection):
-            if isinstance(element, pystac.Asset):
-                container.add_asset(element.title, element)
-            elif isinstance(element, pystac.Item):
-                container.add_item(element)
-            elif isinstance(element, pystac.Collection):
-                container.add_child(element)
-        elif isinstance(container, pystac.Item):
-            if isinstance(element, pystac.Asset):
-                container.add_asset(element.title, element)
-            elif isinstance(element, pystac.Item):
-                container.assets = {**container.assets, **element.assets}
-            else:
-                container.assets = {**container.assets, **collection_to_assets(element)}
-        elif isinstance(container, pystac.Catalog):
-            if isinstance(element, pystac.Item):
-                container.add_item(element)
-            elif isinstance(element, pystac.Collection):
-                container.add_child(element)
-        else:
-            # Warn about unexpected behavior
-            logger.warning(f'{element} has not been added to {container}')
-
-    def __handle_product_stac_item(self, product, base_path, container):
+    def __handle_product_stac_item(product, base_path, container):
         if product['name'] == 'S1':
             if product['extra_info'] == 'GRD':
-                sentinel1_grd_item = stac_sentinel1_grd.create_item(base_path)
-                self.__add_to_container(container, sentinel1_grd_item)
+                sentinel1_grd_item = EOEPCAItem.from_dict(stac_sentinel1_grd.create_item(base_path).to_dict())
+                container.add_stac_element(sentinel1_grd_item)
             if product['extra_info'] == 'SLC':
-                sentinel1_slc_item = stac_sentinel1_slc.create_item(base_path)
-                self.__add_to_container(container, sentinel1_slc_item)
+                sentinel1_slc_item = EOEPCAItem.from_dict(stac_sentinel1_slc.create_item(base_path).to_dict())
+                container.add_stac_element(sentinel1_slc_item)
         if product['name'] == 'S2':
-            sentinel2_item = stac_sentinel2.create_item(base_path)
-            self.__add_to_container(container, sentinel2_item)
+            sentinel2_item = EOEPCAItem.from_dict(stac_sentinel2.create_item(base_path).to_dict())
+            container.add_stac_element(sentinel2_item)
         if product['name'] == 'LANDSAT':
-            landsat_item = stac_landsat.create_item(os.path.join(base_path, product['extra_info']))
-            self.__add_to_container(container, landsat_item)
+            landsat_item = EOEPCAItem.from_dict(
+                stac_landsat.create_item(os.path.join(base_path, product['extra_info'])).to_dict())
+            container.add_stac_element(landsat_item)
 
-    def __handle_file_stac(self, path, container):
+    @staticmethod
+    def __handle_file_stac(path, container):
         try:
-            item = stac_generic.create_image_item(path, asset_name=path, with_proj=True, with_eo=True, with_raster=True)
-            self.__add_to_container(container, item)
+            item = create_stac_item(path, asset_name=path, with_proj=True, with_eo=True, with_raster=True)
+            container.add_stac_element(item)
         except (RasterioIOError, RasterioError):
-            item = stac_generic.create_file_item(path)
-            self.__add_to_container(container, item)
+            item = create_generic_asset(path)
+            container.add_stac_element(item)
 
     @staticmethod
     def __get_container(base_path, collection_paths, item_paths, container):
         folder_name = os.path.basename(base_path)
         if base_path in collection_paths:
-            container = pystac.Collection(id=folder_name,
-                                          description=f'Collection of files under {folder_name}',
-                                          extent=default_extent)
+            container = EOEPCACollection(id=folder_name,
+                                         description=f'Collection of files under {folder_name}',
+                                         extent=default_extent)
         elif base_path in item_paths:
-            container = pystac.Item(id=folder_name,
-                                    geometry=None, bbox=None,
-                                    datetime=datetime.datetime.now(), properties={})
+            container = EOEPCAItem(id=folder_name,
+                                   geometry=None, bbox=None,
+                                   datetime=datetime.datetime.now(), properties={})
         return container
 
     def populate_catalog(self, base_path, collection_paths, item_paths, ignore_paths, parent_container=None):
@@ -131,10 +110,10 @@ class EoepcaStacGenerator:
                 logger.debug(f'{path} added to {file_path_container}')
                 self.__handle_file_stac(path, file_path_container)
                 if file_path_container != container:
-                    self.__add_to_container(container, file_path_container)
+                    container.add_stac_element(file_path_container)
 
         if base_path_container != parent_container:
-            self.__add_to_container(default_container, base_path_container)
+            default_container.add_stac_element(base_path_container)
 
     def __clean(self):
         def clean(assets_dict):
@@ -171,11 +150,8 @@ class EoepcaStacGenerator:
         self.__src_path = src_path
         self.__asset_href_prefix = asset_href_prefix or self.__asset_href_prefix
         self.__catalog_name = catalog_name
-        self.__stac_catalog = pystac.Catalog(id=self.__catalog_name,
-                                             description=f'STAC Catalog for {os.path.basename(src_path)}')
-        if src_path in generate_path_list(ignore_paths):
-            return self.__stac_catalog
-
+        self.__stac_catalog = EOEPCACatalog(id=self.__catalog_name,
+                                            description=f'STAC Catalog for {os.path.basename(src_path)}')
         self.populate_catalog(src_path,
                               generate_path_list(collection_paths),
                               generate_path_list(item_paths),

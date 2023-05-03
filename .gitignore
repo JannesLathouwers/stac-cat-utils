@@ -1,6 +1,7 @@
 /stac-browser
 /files/*
 /stac_catalog/*
+/examples/main.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

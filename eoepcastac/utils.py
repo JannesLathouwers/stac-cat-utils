@@ -5,8 +5,10 @@ import pystac
 
 from glob import glob
 from lxml import etree
+from pystac import RequiredPropertyMissing
+from pystac.extensions.datacube import DatacubeExtension
 
-logger = logging.getLogger("EoepcaStacGenerator")
+logger = logging.getLogger('EoepcaStacGenerator')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
@@ -24,10 +26,10 @@ def is_product_folder(path):
 
     if folder_name.startswith('S2') and 'manifest.safe' in folder_content:
         tree = etree.parse(os.path.join(path, 'manifest.safe'))
-        elements = tree.findall(".//*[@unitType='Product_Level-2A']")
+        elements = tree.findall('.//*[@unitType="Product_Level-2A"]')
         if len(elements) > 0:
             return {'is_product': True, 'name': 'S2', 'extra_info': 'L2A'}
-        elements = tree.findall(".//*[@unitType='Product_Level-1C']")
+        elements = tree.findall('.//*[@unitType="Product_Level-1C"]')
         if len(elements) > 0:
             return {'is_product': True, 'name': 'S2', 'extra_info': 'L1C'}
 
@@ -69,3 +71,59 @@ def collection_to_assets(collection: pystac.Collection):
     for item in collection.get_all_items():
         all_assets = {**all_assets, **item.assets}
     return all_assets
+
+
+def cube_extend(collection, key):
+    cube_collection = DatacubeExtension.ext(collection, add_if_missing=True)
+    try:
+        getattr(cube_collection, key)
+    except RequiredPropertyMissing:
+        setattr(cube_collection, key, {})
+    return cube_collection
+
+
+def is_key_unique(collection, key):
+    keys = []
+    if collection.dimensions:
+        keys.extend(collection.dimensions.keys())
+    if collection.variables:
+        keys.extend(collection.variables.keys())
+    is_unique = key not in keys
+    if not is_unique:
+        logger.error('The key name f{name} is already used in cube:dimensions or cube:variables.')
+    return is_unique
+
+
+def item_assets_info(item: pystac.Item):
+    asset_names = []
+    asset_bands = []
+    for name, asset in item.assets.items():
+        if asset.media_type.startswith('image/'):
+            if 'eo:bands' in asset.extra_fields:
+                asset_bands.extend(asset.extra_fields['eo:bands'])
+                band_names = '_'.join([i['name'] for i in asset.extra_fields['eo:bands']])
+                if 'proj:transform' in asset.extra_fields:
+                    resolution = asset.extra_fields['proj:transform'][0]
+                    asset_names.append(f'{band_names}-{resolution}')
+                else:
+                    asset_names.append(band_names)
+            else:
+                asset_names.append(name)
+    return sorted(asset_names), asset_bands
+
+
+def is_datacube_compliant(collection: pystac.Collection):
+    validation = None
+    bands = []
+    for item in collection.get_all_items():
+        assets_str, bands = item_assets_info(item)
+        item_info = f'{item.bbox}-{item.geometry}-{item.common_metadata.platform}-{assets_str}'
+        if validation is None or validation == item_info:
+            validation = item_info
+        else:
+            return True, bands
+    return True, bands
+
+
+def remove_empty_key(dictionary: dict):
+    return {k: v for k, v in dictionary.items() if v}

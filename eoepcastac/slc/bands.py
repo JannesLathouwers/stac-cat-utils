@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 import pystac
 from pystac.extensions.eo import EOExtension
 
-from eoepca_stac.slc.constants import SENTINEL_POLARIZATIONS
+from eoepcastac.slc.constants import SENTINEL_POLARIZATIONS
 
 logger = logging.getLogger(__name__)
 

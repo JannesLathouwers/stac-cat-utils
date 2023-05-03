@@ -6,7 +6,7 @@ from shapely.geometry import Polygon, mapping
 from stactools.core.io import ReadHrefModifier
 from stactools.core.io.xml import XmlElement
 
-from eoepca_stac.slc.metadata_links import MetadataLinks
+from eoepcastac.slc.metadata_links import MetadataLinks
 
 
 class ProductMetadataError(Exception):

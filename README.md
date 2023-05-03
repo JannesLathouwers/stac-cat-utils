@@ -1,92 +1,94 @@
 # EOEPCA STAC Catalogue Utilities
 
-This library provides utility functions implemented in the Python scripting language that facilitate the generation of STAC files from existing files and folders.
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.spaceapplications.com/eoepca/stac-cat-utils.git
-git branch -M main
-git push -uf origin main
-```
-
-## Integrate with your tools
-
-- [ ] [Set up project integrations](https://gitlab.spaceapplications.com/eoepca/stac-cat-utils/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!).  Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+EOEPCA STAC Catalogue Utilities is a library that provides utility functions implemented in the Python 3 scripting 
+language that facilitate the generation of STAC files from existing files and folders.
 
 ## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+### Install from PyPi (recommended)
+
+```shell
+pip install eoepcastac
+```
+
+### Install from source
+```shell
+git clone https://github.com/orgs/SpaceApplications/teams/eos-team
+cd stac-cat-utils
+pip install .
+```
+
+## Documentation
+See the documentation page for the latest docs.
 
 ## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+### STAC Generator
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+The generation of the STAC files, for existing files and folders, is handled by the `EoepcaStacGenerator` class:
+```python
+from eoepcastac.stac_generator import EoepcaStacGenerator
+stac_generator = EoepcaStacGenerator()
+```
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+Concrete generation of STAC files is handled by the `create` and `save` method of the `EoepcaStacGenerator` generator:
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+1. `create`: Return an STAC EOEPCACatalog object (pystac.Catalog augmented with additional features) for the given source path.
+     * `src_path`: (Required) Root path of the folder.
+     * `catalog_name`: (Optional) Name of the catalogue. Default: "Catalogue".
+     * `collection_paths`: (Optional) List of paths that must be considered as collections. Array of strings, globs and Path instances. Default: None.
+     * `item_paths`: (Optional) List of paths that must be considered as items. Array of strings, globs and Path instances. Default: None.
+     * `ignore_paths`: (Optional) List of paths to ignore. Array of strings, globs and Path instances. Default: None.
+     * `asset_href_prefix`: (Optional) prefix to append to all assets href. Default: '/'.
+   ```python
+   from eoepcastac.stac_generator import EoepcaStacGenerator
+   stac_generator = EoepcaStacGenerator()
+   catalog = stac_generator.create('.')
+   ```
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+2. `save`: Saves the generated STAC EOEPCACatalog object to a destination path.
+     * `dest_path`: (Optional) Destination path where the STAC catalog is saved. Default: 'stac_<catalog_name>' .
+     * `asset_href_prefix`: (Optional) prefix to append to all assets href. Default: '/'.
+    ```python
+    from eoepcastac.stac_generator import EoepcaStacGenerator
+    stac_generator = EoepcaStacGenerator()
+    catalog = stac_generator.create('.')
+    stac_generator.save()
+    ```
+### Datacube
+The catalog and collection created during the generation process are augmented with methods to support the [Datacube Extension Specification
+](https://github.com/stac-extensions/datacube).
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+The following methods are available for:
+1. `EOEPCACatalog`:
+   * `make_cube_compliant`: make all collection of the catalog datacube compliant if possible
+      ```python
+      from eoepcastac.stac_generator import EoepcaStacGenerator
+      stac_generator = EoepcaStacGenerator()
+      catalog = stac_generator.create('.')
+      catalog.make_datacube_compliant()
+      ```
 
-## License
-For open source projects, say how it is licensed.
+2. `EOEPCACollection`:
+   * `make_datacube_compliant`: make the collection datacube compliant if possible
+   * `add_horizontal_dimension`: add a [Horizontal Dimension](https://github.com/stac-extensions/datacube#horizontal-spatial-raster-dimension-object) to the collection
+   * `add_vertical_dimension`: add a [Vertical Dimension](https://github.com/stac-extensions/datacube#vertical-spatial-dimension-object) to the collection
+   * `add_temporal_dimension`: add a [Temporal Dimension](https://github.com/stac-extensions/datacube#temporal-dimension-object) to the collection
+   * `add_additional_dimension`: add a [Custom Dimension](https://github.com/stac-extensions/datacube#additional-dimension-object) to the collection
+   * `add_dimension_variable`: add a [Dimension Variable](https://github.com/stac-extensions/datacube#variable-object) to the collection
+      ```python
+      from eoepcastac.stac_generator import EoepcaStacGenerator
+      stac_generator = EoepcaStacGenerator()
+      catalog = stac_generator.create('.')
+     
+      for collection in catalog.get_all_collections():
+          # Collection Dimension example
+          collection.make_datacube_compliant()
+          collection.add_horizontal_dimension(...)
+          collection.add_vertical_dimension(...)
+          collection.add_temporal_dimension(...)
+          collection.add_additional_dimension(...)
+          collection.add_dimension_variable(...)
+      ```
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+## Examples
+Python script showcasing the usage of the library are available in under the `examples` folder.
