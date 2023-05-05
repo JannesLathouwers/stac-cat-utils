@@ -29,7 +29,8 @@ class EOEPCACollection(pystac.Collection, EOEPCAStac):
             self.add_item(element)
         elif isinstance(element, pystac.Collection):
             self.add_child(element)
-        self.update_extent_from_items()
+        if len(list(self.get_all_items())):
+            self.update_extent_from_items()
 
     def make_datacube_compliant(self):
         col_cube_compliance = is_datacube_compliant(self)
@@ -71,19 +72,19 @@ class EOEPCACollection(pystac.Collection, EOEPCAStac):
                 }))
             }
 
-    def add_vertical_dimension(
-        self, name, extent=None, values=None, step=None, unit=None, description=None, reference_system=4326
+    def add_horizontal_dimension(
+        self, name, axis, extent=None, values=None, step=None, unit=None, description=None, reference_system=4326
     ):
-        if not extent and not values:
-            logger.error(f'A Vertical Dimension MUST specify an extent or values. It MAY also specify both.')
+        if not extent or axis not in ['x', 'y']:
+            logger.error('A Vertical Dimension MUST specify an extent and an axis between "x" and "y".')
             return
         cube_collection = cube_extend(self, 'dimensions')
         if is_key_unique(cube_collection, name):
             cube_collection.dimensions = {
                 **cube_collection.dimensions,
-                f'{name}': VerticalSpatialDimension(remove_empty_key({
+                f'{name}': HorizontalSpatialDimension(remove_empty_key({
                     'type': 'spatial',
-                    'axis': 'z',
+                    'axis': axis,
                     'extent': extent,
                     'values': values,
                     'step': step,
@@ -97,7 +98,7 @@ class EOEPCACollection(pystac.Collection, EOEPCAStac):
         self, name, extent=None, values=None, step=None, unit=None, description=None, reference_system=4326
     ):
         if not extent and not values:
-            logger.error(f'A Vertical Dimension MUST specify an extent or values. It MAY also specify both.')
+            logger.error('A Vertical Dimension MUST specify an extent or values. It MAY also specify both.')
             return
         cube_collection = cube_extend(self, 'dimensions')
         if is_key_unique(cube_collection, name):
@@ -118,7 +119,7 @@ class EOEPCACollection(pystac.Collection, EOEPCAStac):
     def add_additional_dimension(
         self, name, type=None, extent=None, values=None, step=None, unit=None, description=None, reference_system=4326
     ):
-        if not type:
+        if not type or (not extent and not values):
             logger.error('type is required')
             return
         cube_collection = cube_extend(self, 'dimensions')
@@ -142,10 +143,12 @@ class EOEPCACollection(pystac.Collection, EOEPCAStac):
         if not type or type not in ['data', 'auxiliary']:
             logger.error('type is required')
             return
-        cube_collection = cube_extend(self, 'variables')
+        cube_collection = cube_extend(self, 'dimensions')
+        cube_collection = cube_extend(cube_collection, 'variables')
+
         if is_key_unique(cube_collection, name):
             cube_collection.variables = {
-                **self.variables,
+                **cube_collection.variables,
                 f'{name}': Variable(remove_empty_key({
                     'type': type,
                     'dimensions': dimensions,

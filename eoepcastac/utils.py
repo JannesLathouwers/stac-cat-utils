@@ -6,7 +6,7 @@ import pystac
 from glob import glob
 from lxml import etree
 from pystac import RequiredPropertyMissing
-from pystac.extensions.datacube import DatacubeExtension
+from pystac.extensions.datacube import DatacubeExtension, CollectionDatacubeExtension
 
 logger = logging.getLogger('EoepcaStacGenerator')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -60,7 +60,7 @@ def generate_path_list(path_list: list):
     matches = []
     if path_list:
         for path in path_list:
-            matches.extend(glob(str(path), recursive=True))
+            matches.extend(glob(os.path.normpath(str(path)), recursive=True))
     return matches
 
 
@@ -74,23 +74,26 @@ def collection_to_assets(collection: pystac.Collection):
 
 
 def cube_extend(collection, key):
-    cube_collection = DatacubeExtension.ext(collection, add_if_missing=True)
+    if not isinstance(collection, CollectionDatacubeExtension):
+        collection = DatacubeExtension.ext(collection, add_if_missing=True)
     try:
-        getattr(cube_collection, key)
+        value = getattr(collection, key)
+        if not value:
+            setattr(collection, key, {})
     except RequiredPropertyMissing:
-        setattr(cube_collection, key, {})
-    return cube_collection
+        setattr(collection, key, {})
+    return collection
 
 
 def is_key_unique(collection, key):
     keys = []
-    if collection.dimensions:
+    if getattr(collection, 'dimensions'):
         keys.extend(collection.dimensions.keys())
-    if collection.variables:
+    if getattr(collection, 'variables'):
         keys.extend(collection.variables.keys())
     is_unique = key not in keys
     if not is_unique:
-        logger.error('The key name f{name} is already used in cube:dimensions or cube:variables.')
+        logger.error(f'The key name {key} is already used in cube:dimensions or cube:variables.')
     return is_unique
 
 
@@ -115,6 +118,8 @@ def item_assets_info(item: pystac.Item):
 def is_datacube_compliant(collection: pystac.Collection):
     validation = None
     bands = []
+    if len(collection.get_assets()) != 0:
+        return False, bands
     for item in collection.get_all_items():
         assets_str, bands = item_assets_info(item)
         item_info = f'{item.bbox}-{item.geometry}-{item.common_metadata.platform}-{assets_str}'

@@ -38,9 +38,7 @@ class EoepcaStacGenerator:
         self.__src_path = None
         self.__asset_href_prefix = '/'
         self.__catalog_name = 'stac_catalog'
-        self.__generic_collection = EOEPCACollection(id='files',
-                                                     description='Collection of generic files',
-                                                     extent=default_extent)
+        self.__generic_collection = None
 
     @staticmethod
     def __handle_product_stac_item(product, base_path, container):
@@ -129,30 +127,37 @@ class EoepcaStacGenerator:
 
         def add_asset_href_prefix(assets_dict):
             def update_asset_href(asset: pystac.Asset):
-                asset.href = f'{self.__asset_href_prefix}{asset.href}'
+                if not asset.href.startswith(self.__asset_href_prefix):
+                    asset.href = f'{self.__asset_href_prefix}{asset.href}'
+                asset.href = os.path.normpath(asset.href)
                 return asset
 
             return {k: update_asset_href(d) for k, d in assets_dict.items()}
 
-        for i in self.__stac_catalog.get_all_collections():
-            i.set_self_href(self.__src_path)
-            i.make_all_asset_hrefs_relative()
-            i.assets = add_asset_href_prefix(i.assets)
-        for i in self.__stac_catalog.get_all_items():
-            i.set_self_href(self.__src_path)
-            i.make_asset_hrefs_relative()
-            i.assets = add_asset_href_prefix(i.assets)
+        for col in self.__stac_catalog.get_all_collections():
+            col.set_self_href(self.__src_path)
+            for item in col.get_items():
+                item.set_self_href(self.__src_path)
+            col.make_all_asset_hrefs_relative()
+            col.assets = add_asset_href_prefix(col.assets)
+        for item in self.__stac_catalog.get_all_items():
+            item.set_self_href(self.__src_path)
+            item.make_asset_hrefs_relative()
+            item.assets = add_asset_href_prefix(item.assets)
 
     def create(
             self, src_path, catalog_name='Catalog', collection_paths=None, item_paths=None, ignore_paths=None,
-            asset_href_prefix=None
+            asset_href_prefix='/'
     ):
-        self.__src_path = src_path
-        self.__asset_href_prefix = asset_href_prefix or self.__asset_href_prefix
+        self.__generic_collection = EOEPCACollection(id='files',
+                                                     description='Collection of generic files',
+                                                     extent=default_extent)
+        self.__src_path = os.path.normpath(src_path)
+        self.__asset_href_prefix = asset_href_prefix
         self.__catalog_name = catalog_name
         self.__stac_catalog = EOEPCACatalog(id=self.__catalog_name,
                                             description=f'STAC Catalog for {os.path.basename(src_path)}')
-        self.populate_catalog(src_path,
+        self.populate_catalog(self.__src_path,
                               generate_path_list(collection_paths),
                               generate_path_list(item_paths),
                               generate_path_list(ignore_paths))
