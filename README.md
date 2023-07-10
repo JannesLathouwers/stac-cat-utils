@@ -17,8 +17,17 @@ cd stac-cat-utils
 pip install .
 ```
 
-## Documentation
-See the documentation page for the latest docs.
+## Design Notes
+This Python3 library provides functionality to generate STAC (and optionally Datacube compatible) files. It can take existing files and folders as inputs. It can handle a variety of file formats. It does this by using the following 3rd party libraries, each used for their respective capabilities:
+- [stactools](https://pypi.org/project/stactools/),
+- [stactools-browse](https://pypi.org/project/stactools-browse/),
+- [stactools-landsat](https://pypi.org/project/stactools-landsat/),
+- [stactools-sentinel1](https://pypi.org/project/stactools-sentinel1/),
+- [stactools-sentinel2](https://pypi.org/project/stactools-sentinel2/),
+- [pystac](https://pypi.org/project/pystac/),
+- [rio_stac](https://pypi.org/project/rio-stac/).
+
+This library combines the functionality of these packages to provide a single command line utility to easily create STAC files. The library optionally provides more granular control over which files to include/exclude from the resulting STAC file using path and regex matching. 
 
 ## Usage
 
@@ -76,19 +85,49 @@ The following methods are available for:
    * `add_additional_dimension`: add a [Custom Dimension](https://github.com/stac-extensions/datacube#additional-dimension-object) to the collection
    * `add_dimension_variable`: add a [Dimension Variable](https://github.com/stac-extensions/datacube#variable-object) to the collection
       ```python
+      import datetime
       from eoepcastac.stac_generator import EoepcaStacGenerator
+
       stac_generator = EoepcaStacGenerator()
       catalog = stac_generator.create('.')
      
       for collection in catalog.get_all_collections():
           # Collection Dimension example
           collection.make_datacube_compliant()
-          collection.add_horizontal_dimension(...)
-          collection.add_vertical_dimension(...)
-          collection.add_temporal_dimension(...)
-          collection.add_additional_dimension(...)
-          collection.add_dimension_variable(...)
+          collection.add_horizontal_dimension('x_axis', axis='x', extent=[33, 36])
+          collection.add_vertical_dimension('z_axis', extent=[33, 36])
+          collection.add_temporal_dimension('time', extent=[datetime.datetime.now(), datetime.datetime.now())
+          collection.add_additional_dimension('extra', type='test', values=['ex1', 'ex2'])
+          collection.add_dimension_variable('a_variable', type='data', values=['test', 'test1'])
       ```
+
+During the creation of a Datacube compliant STAC file, the library does the following:
+
+1. Verify that, for each Collection in the Catalogue, all the Items share exactly the same properties except the time.
+   - All the Collection Items must have the same platform, sensor, mode, etc.
+   - All the Collection Items must have the same geometry and bbox
+   - All the Collection Items must have the same list of assets 
 
 ## Examples
 Python script showcasing the usage of the library are available in under the `examples` folder.
+
+## Running the tests
+This section details the procedure of running the included test cases.
+
+### Setup
+Create a virtual environment (Optional but recommended):
+```bash
+python3 -m  venv venv
+```
+Activate the virtual environment:
+```bash
+source venv/bin/activate
+```
+Install the requirements:
+```bash
+pip install -r requirements.txt
+```
+Run the tests:
+```bash
+python -m unittest test/test_stac_generator.py
+```
