@@ -12,7 +12,7 @@ pip install eoepcastac
 
 ### Install from source
 ```shell
-git clone https://github.com/orgs/SpaceApplications/teams/eos-team
+git clone https://github.com/SpaceApplications/stac-cat-utils
 cd stac-cat-utils
 pip install .
 ```
