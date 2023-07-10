@@ -96,7 +96,7 @@ The following methods are available for:
           collection.make_datacube_compliant()
           collection.add_horizontal_dimension('x_axis', axis='x', extent=[33, 36])
           collection.add_vertical_dimension('z_axis', extent=[33, 36])
-          collection.add_temporal_dimension('time', extent=[datetime.datetime.now(), datetime.datetime.now())
+          collection.add_temporal_dimension('time', extent=[datetime.datetime.now(), datetime.datetime.now()])
           collection.add_additional_dimension('extra', type='test', values=['ex1', 'ex2'])
           collection.add_dimension_variable('a_variable', type='data', values=['test', 'test1'])
       ```
