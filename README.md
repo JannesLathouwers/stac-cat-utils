@@ -19,13 +19,13 @@ pip install .
 
 ## Design Notes
 This Python3 library provides functionality to generate STAC (and optionally Datacube compatible) files. It can take existing files and folders as inputs. It can handle a variety of file formats. It does this by using the following 3rd party libraries, each used for their respective capabilities:
-- [stactools](https://pypi.org/project/stactools/),
-- [stactools-browse](https://pypi.org/project/stactools-browse/),
-- [stactools-landsat](https://pypi.org/project/stactools-landsat/),
-- [stactools-sentinel1](https://pypi.org/project/stactools-sentinel1/),
-- [stactools-sentinel2](https://pypi.org/project/stactools-sentinel2/),
-- [pystac](https://pypi.org/project/pystac/),
-- [rio_stac](https://pypi.org/project/rio-stac/).
+- [stactools](https://pypi.org/project/stactools/)
+- [stactools-browse](https://pypi.org/project/stactools-browse/)
+- [stactools-landsat](https://pypi.org/project/stactools-landsat/)
+- [stactools-sentinel1](https://pypi.org/project/stactools-sentinel1/)
+- [stactools-sentinel2](https://pypi.org/project/stactools-sentinel2/)
+- [pystac](https://pypi.org/project/pystac/)
+- [rio_stac](https://pypi.org/project/rio-stac/)
 
 This library combines the functionality of these packages to provide a single command line utility to easily create STAC files. The library optionally provides more granular control over which files to include/exclude from the resulting STAC file using path and regex matching. 
 
@@ -103,7 +103,7 @@ The following methods are available for:
 
 During the creation of a Datacube compliant STAC file, the library does the following:
 
-1. Verify that, for each Collection in the Catalogue, all the Items share exactly the same properties except the time.
+Verify that, for each Collection in the Catalogue, all the Items share exactly the same properties except the time.
    - All the Collection Items must have the same platform, sensor, mode, etc.
    - All the Collection Items must have the same geometry and bbox
    - All the Collection Items must have the same list of assets 
