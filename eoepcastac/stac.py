@@ -54,13 +54,13 @@ class EOEPCACollection(pystac.Collection, EOEPCAStac):
         }
 
     def add_temporal_dimension(
-        self, name, extent, values=None, step=None, description=None
+        self, name, extent, values=None, step=None, description=None, replace=False
     ):
         if not extent:
             logger.error('A Temporal Dimension MUST specify an extent')
             return
         cube_collection = cube_extend(self, 'dimensions')
-        if is_key_unique(cube_collection, name):
+        if is_key_unique(cube_collection, name) or replace:
             cube_collection.dimensions = {
                 **cube_collection.dimensions,
                 f'{name}': TemporalDimension(remove_empty_key({

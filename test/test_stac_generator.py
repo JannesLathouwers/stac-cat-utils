@@ -170,19 +170,22 @@ class TestDatacubeGeneration(TestCaseConfig):
         cube_collection: EOEPCACollection = list(catalog.get_collections())[0]
         self.assertNotIn('cube:dimensions', cube_collection.extra_fields)
 
-        cube_collection.add_horizontal_dimension('x_axis', axis='x', extent=[33, 36])
+        extent = [33, 36]
+        cube_collection.add_horizontal_dimension('x_axis', axis='x', extent=extent)
         self.assertIn('cube:dimensions', cube_collection.extra_fields)
         self.assertIn('x_axis', cube_collection.extra_fields['cube:dimensions'])
+        self.assertEqual(cube_collection.extra_fields["cube:dimensions"]["x_axis"]["extent"], extent)
 
     def test_collection_vertical_dimension(self):
         catalog = self.stac_generator.create(f'{self.src_path}/cube',
                                              collection_paths=[f'{self.src_path}/cube/cube_collection'])
         cube_collection: EOEPCACollection = list(catalog.get_collections())[0]
         self.assertNotIn('cube:dimensions', cube_collection.extra_fields)
-
-        cube_collection.add_vertical_dimension('z_axis', extent=[33, 36])
+        extent = [34, 37]
+        cube_collection.add_vertical_dimension('z_axis', extent=extent)
         self.assertIn('cube:dimensions', cube_collection.extra_fields)
         self.assertIn('z_axis', cube_collection.extra_fields['cube:dimensions'])
+        self.assertEqual(cube_collection.extra_fields["cube:dimensions"]["z_axis"]["extent"], extent)
 
     def test_collection_additional_dimension(self):
         catalog = self.stac_generator.create(f'{self.src_path}/cube',
@@ -190,9 +193,14 @@ class TestDatacubeGeneration(TestCaseConfig):
         cube_collection: EOEPCACollection = list(catalog.get_collections())[0]
         self.assertNotIn('cube:dimensions', cube_collection.extra_fields)
 
-        cube_collection.add_additional_dimension('extra', type='test', values=['ex1', 'ex2'])
+        values = ['ex1', 'ex2']
+        dim_type = "test"
+
+        cube_collection.add_additional_dimension('extra', type=dim_type , values=values)
         self.assertIn('cube:dimensions', cube_collection.extra_fields)
         self.assertIn('extra', cube_collection.extra_fields['cube:dimensions'])
+        self.assertEqual(cube_collection.extra_fields["cube:dimensions"]["extra"]["type"], dim_type)
+        self.assertEqual(cube_collection.extra_fields["cube:dimensions"]["extra"]["values"], values)
 
     def test_collection_temporal_dimension(self):
         catalog = self.stac_generator.create(f'{self.src_path}/cube',
@@ -200,9 +208,15 @@ class TestDatacubeGeneration(TestCaseConfig):
         cube_collection: EOEPCACollection = list(catalog.get_collections())[0]
         self.assertNotIn('cube:dimensions', cube_collection.extra_fields)
 
-        cube_collection.add_temporal_dimension('time', extent=[datetime.datetime.now(), datetime.datetime.now()])
+        end = datetime.datetime.now()
+        start = end - datetime.timedelta(days=1)
+
+        extent = [start.isoformat(), end.isoformat()]
+
+        cube_collection.add_temporal_dimension('time', extent=extent)
         self.assertIn('cube:dimensions', cube_collection.extra_fields)
         self.assertIn('time', cube_collection.extra_fields['cube:dimensions'])
+        self.assertEqual(cube_collection.extra_fields["cube:dimensions"]["time"]["extent"], extent)
 
     def test_collection_variable_dimension(self):
         catalog = self.stac_generator.create(f'{self.src_path}/cube',
@@ -213,3 +227,54 @@ class TestDatacubeGeneration(TestCaseConfig):
         cube_collection.add_dimension_variable('a_variable', type='data', values=['test', 'test1'])
         self.assertIn('cube:variables', cube_collection.extra_fields)
         self.assertIn('a_variable', cube_collection.extra_fields['cube:variables'])
+
+    def test_overwrite_temporal_dimension_in_datacube_compliant_collection(self):
+        catalog = self.stac_generator.create(f'{self.src_path}/cube',
+                                             collection_paths=[f'{self.src_path}/cube/cube_collection'])
+        catalog.make_datacube_compliant()
+        cube_collection = list(catalog.get_collections())[0]
+        self.assertIn('cube:dimensions', cube_collection.extra_fields)
+        self.assertIn('x', cube_collection.extra_fields['cube:dimensions'])
+        self.assertIn('y', cube_collection.extra_fields['cube:dimensions'])
+        self.assertIn('time', cube_collection.extra_fields['cube:dimensions'])
+        self.assertIn('spectral', cube_collection.extra_fields['cube:dimensions'])
+
+        # new extent for this test
+        end = datetime.datetime.now()
+        start = end - datetime.timedelta(days=1)
+        extent = [start.isoformat(), end.isoformat()]
+
+        # Try to add without replace
+        cube_collection.add_temporal_dimension('time', extent=extent, replace=False)
+        self.assertIn('cube:dimensions', cube_collection.extra_fields)
+        self.assertIn('time', cube_collection.extra_fields['cube:dimensions'])
+        # Verify that the dimension has not been updated
+        self.assertNotEqual(cube_collection.extra_fields["cube:dimensions"]["time"]["extent"], extent)
+
+        # Add with replace
+        cube_collection.add_temporal_dimension('time', extent=extent, replace=True)
+        self.assertIn('cube:dimensions', cube_collection.extra_fields)
+        self.assertIn('time', cube_collection.extra_fields['cube:dimensions'])
+        # Verify that the dimension was replaced
+        self.assertEqual(cube_collection.extra_fields["cube:dimensions"]["time"]["extent"], extent)
+
+    def test_save_datacube_compliant_collection(self):
+        folder_output = 'test_catalog'
+        catalog  = self.stac_generator.create(self.src_path,
+                                   collection_paths=[f'{self.src_path}/logs'],
+                                   item_paths=[f'{self.src_path}/logs/extra_logs'])
+
+        catalog.make_datacube_compliant()
+        self.stac_generator.save(dest_path=folder_output)
+        self.assertTrue(os.path.exists(f'{folder_output}/catalog.json'), 'catalog folder should exist')
+
+        self.assertTrue(os.path.exists(f'{folder_output}/files/collection.json'),
+                        'generic collection folder should exist')
+        self.assertTrue(os.path.exists(f'{folder_output}/files/test.png/test.png.json'),
+                        'png item folder and json should exist')
+
+        self.assertTrue(os.path.exists(f'{folder_output}/logs/collection.json'),
+                        'logs collection should exist')
+        self.assertTrue(os.path.exists(f'{folder_output}/logs/extra_logs/extra_logs.json'),
+                        'extra_logs item should exist')
+        self.remove_output_folder(folder_output)
