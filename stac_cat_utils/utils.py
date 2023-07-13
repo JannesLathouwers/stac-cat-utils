@@ -8,7 +8,7 @@ from lxml import etree
 from pystac import RequiredPropertyMissing
 from pystac.extensions.datacube import DatacubeExtension, CollectionDatacubeExtension
 
-logger = logging.getLogger('EoepcaStacGenerator')
+logger = logging.getLogger('StacCatalogGenerator')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 

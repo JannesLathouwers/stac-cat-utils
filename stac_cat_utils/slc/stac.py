@@ -10,7 +10,7 @@ from pystac.extensions.sar import SarExtension
 from pystac.extensions.sat import SatExtension
 from stactools.core.io import ReadHrefModifier
 
-from eoepcastac.slc import constants as c
+from stac_cat_utils.slc import constants as c
 
 from . import Format
 from .bands import image_asset_from_href

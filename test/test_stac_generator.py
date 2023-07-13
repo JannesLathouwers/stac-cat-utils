@@ -3,16 +3,16 @@ import os
 from pathlib import Path
 from unittest import TestCase
 
-from eoepcastac.stac import EOEPCACollection
-from eoepcastac.stac_generator import EoepcaStacGenerator
-from eoepcastac.utils import collection_to_assets
+from stac_cat_utils.stac import STACCollection
+from stac_cat_utils.stac_generator import StacCatalogGenerator
+from stac_cat_utils.utils import collection_to_assets
 
 
 class TestCaseConfig(TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.stac_generator = EoepcaStacGenerator()
+        cls.stac_generator = StacCatalogGenerator()
         cls.src_path = os.path.join(os.path.dirname(__file__), './../test_files')
         cls.ignore_paths = [f'{cls.src_path}/products', f'{cls.src_path}/cube']
 
@@ -26,7 +26,7 @@ class TestCaseConfig(TestCase):
         os.rmdir(output_folder)
 
 
-class TestEoepcaStacGenerator(TestCaseConfig):
+class TestStacCatalogGenerator(TestCaseConfig):
 
     def test_catalog_creation(self):
         catalog = self.stac_generator.create(self.src_path, ignore_paths=self.ignore_paths)
@@ -167,7 +167,7 @@ class TestDatacubeGeneration(TestCaseConfig):
     def test_collection_horizontal_dimension(self):
         catalog = self.stac_generator.create(f'{self.src_path}/cube',
                                              collection_paths=[f'{self.src_path}/cube/cube_collection'])
-        cube_collection: EOEPCACollection = list(catalog.get_collections())[0]
+        cube_collection: STACCollection = list(catalog.get_collections())[0]
         self.assertNotIn('cube:dimensions', cube_collection.extra_fields)
 
         extent = [33, 36]
@@ -179,7 +179,7 @@ class TestDatacubeGeneration(TestCaseConfig):
     def test_collection_vertical_dimension(self):
         catalog = self.stac_generator.create(f'{self.src_path}/cube',
                                              collection_paths=[f'{self.src_path}/cube/cube_collection'])
-        cube_collection: EOEPCACollection = list(catalog.get_collections())[0]
+        cube_collection: STACCollection = list(catalog.get_collections())[0]
         self.assertNotIn('cube:dimensions', cube_collection.extra_fields)
         extent = [34, 37]
         cube_collection.add_vertical_dimension('z_axis', extent=extent)
@@ -190,7 +190,7 @@ class TestDatacubeGeneration(TestCaseConfig):
     def test_collection_additional_dimension(self):
         catalog = self.stac_generator.create(f'{self.src_path}/cube',
                                              collection_paths=[f'{self.src_path}/cube/cube_collection'])
-        cube_collection: EOEPCACollection = list(catalog.get_collections())[0]
+        cube_collection: STACCollection = list(catalog.get_collections())[0]
         self.assertNotIn('cube:dimensions', cube_collection.extra_fields)
 
         values = ['ex1', 'ex2']
@@ -205,7 +205,7 @@ class TestDatacubeGeneration(TestCaseConfig):
     def test_collection_temporal_dimension(self):
         catalog = self.stac_generator.create(f'{self.src_path}/cube',
                                              collection_paths=[f'{self.src_path}/cube/cube_collection'])
-        cube_collection: EOEPCACollection = list(catalog.get_collections())[0]
+        cube_collection: STACCollection = list(catalog.get_collections())[0]
         self.assertNotIn('cube:dimensions', cube_collection.extra_fields)
 
         end = datetime.datetime.now()
@@ -221,7 +221,7 @@ class TestDatacubeGeneration(TestCaseConfig):
     def test_collection_variable_dimension(self):
         catalog = self.stac_generator.create(f'{self.src_path}/cube',
                                              collection_paths=[f'{self.src_path}/cube/cube_collection'])
-        cube_collection: EOEPCACollection = list(catalog.get_collections())[0]
+        cube_collection: STACCollection = list(catalog.get_collections())[0]
         self.assertNotIn('cube:variables', cube_collection.extra_fields)
 
         cube_collection.add_dimension_variable('a_variable', type='data', values=['test', 'test1'])

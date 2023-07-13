@@ -9,19 +9,19 @@ from abc import ABC, abstractmethod
 from pystac.extensions.datacube import HorizontalSpatialDimension, TemporalDimension, Dimension, \
     VerticalSpatialDimension, Variable
 
-from eoepcastac.utils import collection_to_assets, is_datacube_compliant, cube_extend, is_key_unique, remove_empty_key
+from stac_cat_utils.utils import collection_to_assets, is_datacube_compliant, cube_extend, is_key_unique, remove_empty_key
 
-logger = logging.getLogger('EoepcaStacGenerator')
+logger = logging.getLogger('StacCatalogGenerator')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
-class EOEPCAStac(ABC):
+class STACABC(ABC):
     @abstractmethod
     def add_stac_element(self, element):
         pass
 
 
-class EOEPCACollection(pystac.Collection, EOEPCAStac):
+class STACCollection(pystac.Collection, STACABC):
     def add_stac_element(self, element):
         if isinstance(element, pystac.Asset):
             self.add_asset(element.title, element)
@@ -160,7 +160,7 @@ class EOEPCACollection(pystac.Collection, EOEPCAStac):
             }
 
 
-class EOEPCAItem(pystac.Item, EOEPCAStac):
+class STACItem(pystac.Item, STACABC):
     def add_stac_element(self, element):
         if isinstance(element, pystac.Asset):
             self.add_asset(element.title, element)
@@ -170,7 +170,7 @@ class EOEPCAItem(pystac.Item, EOEPCAStac):
             self.assets = {**self.assets, **collection_to_assets(element)}
 
 
-class EOEPCACatalog(pystac.Catalog, EOEPCAStac):
+class STACCatalog(pystac.Catalog, STACABC):
     def add_stac_element(self, element):
         if isinstance(element, pystac.Item):
             self.add_item(element)

@@ -4,7 +4,7 @@ with open('README.md', 'r', encoding='utf-8') as fh:
     long_description = fh.read()
 
 setup(
-    name='eoepcastac',
+    name='stac_cat_utils',
     version='0.1.0',
     description='Package of utility functions facilitating generation of STAC files from existing files and folders.',
     url='https://github.com/orgs/SpaceApplications/',   #TODO: add repo
@@ -12,7 +12,7 @@ setup(
     author_email='spaceapps@spaceapplications.com',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    packages=['eoepcastac', 'eoepcastac/slc'],
+    packages=['stac-cat-utilr', 'stac_cat_utils/slc'],
     keywords='STAC, pystac, STAC generation',
     python_requires='>=3.6',
     license='BSD',
